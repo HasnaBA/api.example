@@ -71,7 +71,7 @@ function verifyToken (req, res, next) {
         })
     }
 }
-
+//route sécurisée
 app.get('/me', verifyToken, (req, res) => {
     res.send('prend moi!')
 })
