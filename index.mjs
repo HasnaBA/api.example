@@ -48,6 +48,8 @@ app.use(cors({
 //autorise un certain type de données
 app.use(bodyParser.json())
 
+app.use(express.static('docs'))
+
 function verifyToken (req, res, next) {
     let token = req.headers.authorization
     if (typeof token === 'string' &&
@@ -67,14 +69,48 @@ function verifyToken (req, res, next) {
     } else {
         res.status(401)
         res.json({
-                error: "Access Token is required !"
+            error: "Access Token is required !"
         })
     }
 }
-//route sécurisée
+
+/**
+ * @api {get} /me Afficher l'utilisateur connecté
+ * @apiHeader Authorization Basic Access Authentication token
+ * @apiName GetMe
+ * @apiGroup Users
+ * @apiSampleRequest me
+ */
+
+//route sécurisée, récupère token , le décode
 app.get('/me', verifyToken, (req, res) => {
-    res.send('prend moi!')
+    const token = req.headers.authorization.substring(7)
+    const decoded = jwt.verify(token, process.env.SECRET)
+    //récupère id, email, name
+    res.json({
+        id: decoded.id,
+        email:decoded.email,
+        name:decoded.name
+    })
 })
+
+/**
+ * @api {post} /user Créer un utilisateur
+ * @apiName PostUser
+ * @apiGroup Users
+ * @apiHeader Content-Type=application/json application/json
+ * @apiExample Example usage:
+ *     body:
+ *     {
+ *       "email": "user@email.com",
+ *       "name": "User name",
+ *       "password": "szjkdjklkjdz"
+ *     }
+ * @apiParam (body/json) {String} email User email
+ * @apiParam (body/json) {String} name User name
+ * @apiParam (body/json) {String} password User password
+ * @apiSampleRequest user
+ */
 
 app.post('/user', async (req, res) => {
     const email = req.body.email //recupere les valeurs depuis POSTMAN
@@ -110,6 +146,23 @@ app.post('/user', async (req, res) => {
 
 })
 
+
+/**
+ * @api {post} /login Se connecter
+ * @apiName PostLogin
+ * @apiGroup Users
+ * @apiHeader Content-Type=application/json application/json
+ * @apiExample Example usage:
+ *     body:
+ *     {
+ *       "email": "user@email.com",
+ *       "password": "szjkdjklkjdz"
+ *     }
+ * @apiParam (body/json) {String} email User email
+ * @apiParam (body/json) {String} password User password
+ * @apiSampleRequest login
+ */
+
 app.post('/login', async (req, res) => {
     const email = req.body.email
     const password = req.body.password
@@ -128,7 +181,10 @@ app.post('/login', async (req, res) => {
             token
         })
     } else {
-
+        res.status(401)
+        res.json({
+            error: "Identifiant invalid"
+        })
     }
     console.log(data)
 })
